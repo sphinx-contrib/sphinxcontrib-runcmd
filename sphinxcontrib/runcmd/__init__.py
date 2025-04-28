@@ -76,15 +76,25 @@ class RunCmdDirective(code.CodeBlock):
         # Grab a cache singleton instance
         cache = CMDCache()
 
+        # Handle "$ foo" to run "foo", but display it as prompt (enabled
+        # "prompt" flag).
+        if self.arguments[0] in ("$", "%"):
+            command = " ".join(self.arguments[1:])
+            prompt = " ".join(self.arguments)
+        else:
+            command = " ".join(self.arguments)
+            if "prompt" in self.options:
+                prompt = command
+            else:
+                prompt = False
+
         # Get the command output
-        command = " ".join(self.arguments)
         output = cache.get(command)
 
         # Grab our custom commands
         syntax = self.options.get("syntax", "text")
         replace = self.options.get("replace", "")
         reader = csv.reader([replace], delimiter=",", escapechar="\\")
-        prompt = "prompt" in self.options
         dedent_output = self.options.get("dedent-output", 0)
 
         # Dedent the output if required
@@ -93,7 +103,7 @@ class RunCmdDirective(code.CodeBlock):
 
         # Add the prompt to our output if required
         if prompt:
-            output = "{}\n{}".format(command, output)
+            output = "{}\n{}".format(prompt, output)
 
         # Do our "replace" syntax on the command output
         for items in reader:
